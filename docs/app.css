@@ -456,6 +456,34 @@ form button:hover {
 .btn-light:hover {
   filter: brightness(0.98);
 }
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.fav-btn {
+  background: #fff;
+  border: 2px solid var(--accent);
+  color: var(--primary-dark);
+  border-radius: 999px;
+  padding: 0.35rem 0.6rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.fav-btn:hover {
+  filter: brightness(0.97);
+  transform: translateY(-1px);
+}
+.fav-btn.fav-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
 .muted {
   color: var(--muted);
 }
