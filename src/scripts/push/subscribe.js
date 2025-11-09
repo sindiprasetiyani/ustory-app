@@ -1,13 +1,9 @@
-// src/scripts/push/subscribe.js
 import CONFIG from "../config.js";
 import { ensureNotificationPermission } from "./ask-permission.js";
 
 const { PUSH_API_BASE, VAPID_PUBLIC_KEY } = CONFIG;
 
-/* ---------- helpers ---------- */
-
 function apiUrl(path) {
-  // pastikan selalu ke URL penuh
   return path.startsWith("http") ? path : `${PUSH_API_BASE}${path}`;
 }
 
@@ -25,7 +21,6 @@ export function isPushSupported() {
 }
 
 function getAccessToken() {
-  // token bisa tersimpan sebagai string atau objek { token: "..." }
   const raw = localStorage.getItem("token");
   if (!raw) return null;
   try {
@@ -53,7 +48,7 @@ async function callAPI(method, path, body) {
     const text = await res.text().catch(() => "");
     throw new Error(`${method} ${url} failed (${res.status}) ${text}`);
   }
-  // beberapa endpoint bisa mengembalikan body kosong
+
   return res
     .text()
     .then((t) => (t ? JSON.parse(t) : {}))
@@ -77,8 +72,6 @@ function subToPayload(sub) {
   };
 }
 
-/* ---------- public API ---------- */
-
 export async function getExistingSubscription() {
   const reg = await getReadyRegistration();
   return reg.pushManager.getSubscription();
@@ -91,7 +84,6 @@ export async function subscribeWebPush({ forceSync = true } = {}) {
   const reg = await getReadyRegistration();
   const existing = await reg.pushManager.getSubscription();
 
-  // Jika sudah ada subscription, sync ke server (optional) lalu kembalikan
   if (existing) {
     if (forceSync) {
       try {
@@ -103,13 +95,11 @@ export async function subscribeWebPush({ forceSync = true } = {}) {
     return existing;
   }
 
-  // Buat subscription baru
   const sub = await reg.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
   });
 
-  // Kirim ke server (retry kecil kalau gagal sementara)
   const payload = subToPayload(sub);
   let lastErr;
   for (let i = 0; i < 2; i++) {
@@ -133,14 +123,12 @@ export async function unsubscribeWebPush() {
   const sub = await reg.pushManager.getSubscription();
   if (!sub) return false;
 
-  // Beri tahu server dulu
   try {
     await callAPI("DELETE", "/notifications/subscribe", { endpoint: sub.endpoint });
   } catch (e) {
     console.warn("[Push] server unsubscribe failed, continue local:", e.message);
   }
 
-  // Lalu hapus sub di browser
   return sub.unsubscribe();
 }
 

@@ -1,4 +1,3 @@
-// src/scripts/push/ui-toggle.js
 import { subscribeWebPush, unsubscribeWebPush, getExistingSubscription, isPushSupported } from "./subscribe.js";
 
 const TOGGLE_ID = "ustory-push-toggle";
@@ -15,17 +14,14 @@ function getToken() {
 }
 
 export async function mountPushToggle(container = document.body) {
-  // Cegah double-mount
   const existingNode = document.getElementById(TOGGLE_ID);
   if (existingNode) return;
 
-  // Sembunyikan jika tidak didukung
   if (!isPushSupported()) {
     console.warn("[Push] Browser tidak mendukung Service Worker / Push API.");
     return;
   }
 
-  // Wrapper
   const wrap = document.createElement("div");
   wrap.id = TOGGLE_ID;
   wrap.setAttribute("role", "region");
@@ -66,7 +62,6 @@ export async function mountPushToggle(container = document.body) {
     transition: background .3s ease, opacity .2s ease;
   `;
 
-  // Toast helper
   function showToast(msg, color = "#10b981") {
     const toast = document.createElement("div");
     toast.textContent = msg;
@@ -96,12 +91,10 @@ export async function mountPushToggle(container = document.body) {
     }, 2500);
   }
 
-  // Refresh UI state
   async function refresh() {
     const token = getToken();
     const permission = Notification.permission;
 
-    // Status awal
     let enabled = false;
     try {
       const sub = await getExistingSubscription();
@@ -110,7 +103,6 @@ export async function mountPushToggle(container = document.body) {
       enabled = false;
     }
 
-    // Label & tombol
     if (!token) {
       label.textContent = "Push Notification: login terlebih dulu";
       btn.textContent = "Login Required";
@@ -131,7 +123,6 @@ export async function mountPushToggle(container = document.body) {
       return;
     }
 
-    // permission default/granted
     btn.disabled = false;
     btn.style.opacity = "1";
     btn.textContent = enabled ? "Disable" : "Enable";
@@ -140,7 +131,6 @@ export async function mountPushToggle(container = document.body) {
     label.textContent = enabled ? "Push Notification: ON" : "Push Notification: OFF";
   }
 
-  // Click handler
   btn.addEventListener("click", async () => {
     const token = getToken();
     if (!token) {
@@ -171,6 +161,5 @@ export async function mountPushToggle(container = document.body) {
   wrap.append(label, btn);
   container.appendChild(wrap);
 
-  // Set status awal
   refresh().catch(() => {});
 }
