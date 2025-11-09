@@ -66,7 +66,7 @@ export default class HomePage {
         const alreadyRegisteredFromApp = !!window.__SW_REGISTERED;
         if (!alreadyRegisteredFromApp) {
           const existing = await navigator.serviceWorker.getRegistration();
-          if (!existing) await navigator.serviceWorker.register("/sw.js");
+          if (!existing) await navigator.serviceWorker.register("./sw.js", { scope: "./" });
         }
       } catch (e) {
         console.warn("SW registration skipped/failed:", e);
