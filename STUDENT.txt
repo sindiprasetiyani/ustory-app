@@ -1,0 +1,114 @@
+# UStory App
+
+## Pengantar
+
+Proyek ini dibuat sebagai bagian dari kelas [Menjadi Front-End Web Developer Expert](https://www.dicoding.com/academies/219).  
+UStory adalah aplikasi berbasis Progressive Web App (PWA) yang memungkinkan pengguna membagikan cerita mereka melalui foto, deskripsi, dan lokasi pada peta interaktif.  
+Aplikasi ini mendukung mode offline, push notification, instalasi ke homescreen, serta penyimpanan data lokal menggunakan IndexedDB.
+
+## Deskripsi
+
+UStory dikembangkan dengan konsep SPA (Single Page Application) menggunakan JavaScript modular dan Webpack.  
+Fitur-fitur utama meliputi:
+- Autentikasi (Login & Register)
+- Tambah Story dengan foto & lokasi (geolocation)
+- Peta Interaktif menggunakan Leaflet
+- Offline Mode (cache app shell & data dinamis)
+- Push Notification dengan VAPID keys
+- IndexedDB untuk penyimpanan lokal (create, read, delete)
+- Filter, Search, dan Sort Story
+- Mode Gelap (Dark Mode)
+- PWA Installable + Manifest lengkap
+
+## Prasyarat
+
+- Node.js (versi terbaru disarankan)
+- npm
+
+## Instalasi
+
+Masuk ke folder proyek:
+    ```bash
+    cd ustory-app
+Pasang dependensi:
+    ```bash
+    npm install
+Jalankan dalam mode development:
+    ```bash
+    npm run start-dev
+Bangun untuk production:
+    ```bash
+    npm run build
+Jalankan hasil build:
+    ```bash
+    npm run serve
+
+Scripts
+
+npm run start-dev → Menjalankan Webpack Dev Server
+npm run build → Build untuk production
+npm run serve → Menjalankan server lokal untuk hasil build
+npm run prettier → Mengecek format kode
+npm run prettier:write → Memformat ulang kode
+
+ustory-app
+├── package.json
+├── webpack.common.js
+├── webpack.dev.js
+├── webpack.prod.js
+├── README.md
+├── STUDENT.txt
+├── src
+│   ├── index.html
+│   ├── public
+│   │   ├── favicon.png
+│   │   ├── images
+│   │   │   ├── icons
+│   │   │   ├── screenshots
+│   │   │   └── shortcuts
+│   │   ├── logo.png
+│   │   ├── manifest.webmanifest
+│   │   └── sw.js
+│   ├── scripts
+│   │   ├── data
+│   │   │   ├── api.js
+│   │   │   ├── auth-api.js
+│   │   │   └── idb.js
+│   │   ├── pages
+│   │   │   ├── about
+│   │   │   │   └── about-page.js
+│   │   │   ├── add
+│   │   │   │   └── add-page.js
+│   │   │   ├── home
+│   │   │   │   └── home-page.js
+│   │   │   ├── login
+│   │   │   │   └── login-page.js
+│   │   │   └── register
+│   │   │       └── register-page.js
+│   │   ├── presenters
+│   │   │   ├── add.presenter.js
+│   │   │   └── home.presenter.js
+│   │   ├── push
+│   │   │   ├── ask-permission.js
+│   │   │   ├── subscribe.js
+│   │   │   └── ui-toggle.js
+│   │   ├── routes
+│   │   │   ├── routes.js
+│   │   │   └── url-parser.js
+│   │   ├── sync
+│   │   │   └── offline-sync.js
+│   │   ├── utils
+│   │   │   ├── focus-trap.js
+│   │   │   ├── marker.js
+│   │   │   ├── config.js
+│   │   │   └── index.js
+│   │   └── app.js
+│   └── styles
+│       └── styles.css
+└── .gitignore
+
+Deployment
+Repository GitHub: 
+
+VAPID public keys : 
+BCCs2eonMI-6H2ctvFaWg-UYdDv387Vno_bzUzALpB442r2lCnsHmtrx8biyPi_E-1fSGABK_Qs_GlvPoJJqxbk
