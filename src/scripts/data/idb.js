@@ -1,7 +1,3 @@
-// src/scripts/data/idb.js
-// ======================================================
-// DB setup
-// ======================================================
 const DB_NAME = "ustory-db";
 const DB_VERSION = 1;
 const STORE_STORIES = "stories";
@@ -15,18 +11,15 @@ function openDB() {
     req.onupgradeneeded = () => {
       const db = req.result;
 
-      // Cache story dari API
       if (!db.objectStoreNames.contains(STORE_STORIES)) {
         db.createObjectStore(STORE_STORIES, { keyPath: "id" });
       }
 
-      // Antrian story offline (akan disync saat online)
       if (!db.objectStoreNames.contains(STORE_PENDING)) {
         const store = db.createObjectStore(STORE_PENDING, { keyPath: "tempId" });
         store.createIndex("createdAt", "createdAt", { unique: false });
       }
 
-      // ===== NEW: favorites store (untuk kriteria IndexedDB)
       if (!db.objectStoreNames.contains(STORE_FAVORITES)) {
         db.createObjectStore(STORE_FAVORITES, { keyPath: "id" });
       }
@@ -43,7 +36,6 @@ async function txStore(storeName, mode, fn) {
     const tx = db.transaction(storeName, mode);
     const store = tx.objectStore(storeName);
 
-    // izinkan fn mengembalikan hasil jika diperlukan
     let fnResult;
     try {
       fnResult = fn(store);
@@ -58,9 +50,6 @@ async function txStore(storeName, mode, fn) {
   });
 }
 
-// ======================================================
-// STORIES (cache dari API)
-// ======================================================
 export async function saveStories(list = []) {
   await txStore(STORE_STORIES, "readwrite", (store) => {
     store.clear();
@@ -85,9 +74,6 @@ export async function deleteStory(id) {
   });
 }
 
-// ======================================================
-// PENDING (queue offline untuk disinkron)
-// ======================================================
 export async function addPendingStory(payload) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -128,14 +114,6 @@ export async function clearAllPending() {
   });
 }
 
-// ======================================================
-// FAVORITES (CRUD) — TANPA window._ustoryDB
-// ======================================================
-
-/**
- * Simpan ke favorit (Create / Update)
- * Menyimpan field minimum agar halaman favorites tetap bisa tampil offline.
- */
 export async function addFavorite(story) {
   const payload = {
     id: story.id,
@@ -152,14 +130,12 @@ export async function addFavorite(story) {
   return payload;
 }
 
-/** Hapus dari favorit (Delete) */
 export async function removeFavorite(id) {
   await txStore(STORE_FAVORITES, "readwrite", (store) => {
     store.delete(id);
   });
 }
 
-/** Ambil semua favorit (Read) */
 export async function getFavorites() {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -171,7 +147,6 @@ export async function getFavorites() {
   });
 }
 
-/** Cek apakah sebuah id sudah difavoritkan */
 export async function isFavorite(id) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
