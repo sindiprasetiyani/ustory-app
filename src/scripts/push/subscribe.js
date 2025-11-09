@@ -1,10 +1,13 @@
+// src/scripts/push/subscribe.js
+import CONFIG from "../config.js";
 import { ensureNotificationPermission } from "./ask-permission.js";
 
-const VAPID_PUBLIC_KEY = "BCCs2eonMI-6H2ctvFaWg-UYdDv387Vno_bzUzALpB442r2lCnsHmtrx8biyPi_E-1fSGABK_Qs_GlvPoJJqxbk";
+const { PUSH_API_BASE, VAPID_PUBLIC_KEY } = CONFIG;
 
-const PUSH_API_BASE = "https://story-api.dicoding.dev/v1";
+/* ---------- helpers ---------- */
 
 function apiUrl(path) {
+  // pastikan selalu ke URL penuh
   return path.startsWith("http") ? path : `${PUSH_API_BASE}${path}`;
 }
 
@@ -22,24 +25,21 @@ export function isPushSupported() {
 }
 
 function getAccessToken() {
+  // token bisa tersimpan sebagai string atau objek { token: "..." }
+  const raw = localStorage.getItem("token");
+  if (!raw) return null;
   try {
-    const raw = localStorage.getItem("token");
-    if (!raw) return null;
-
-    try {
-      const parsed = JSON.parse(raw);
-      return typeof parsed === "string" ? parsed : parsed?.token || raw;
-    } catch {
-      return raw;
-    }
+    const parsed = JSON.parse(raw);
+    return typeof parsed === "string" ? parsed : parsed?.token || raw;
   } catch {
-    return null;
+    return raw;
   }
 }
 
 async function callAPI(method, path, body) {
   const token = getAccessToken();
   const url = apiUrl(path);
+
   const res = await fetch(url, {
     method,
     headers: {
@@ -48,11 +48,16 @@ async function callAPI(method, path, body) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
+
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`${method} ${url} failed (${res.status}) ${text}`);
   }
-  return res.json().catch(() => ({}));
+  // beberapa endpoint bisa mengembalikan body kosong
+  return res
+    .text()
+    .then((t) => (t ? JSON.parse(t) : {}))
+    .catch(() => ({}));
 }
 
 async function getReadyRegistration() {
@@ -61,14 +66,18 @@ async function getReadyRegistration() {
 }
 
 function subToPayload(sub) {
-  const json = sub.toJSON();
+  const json = sub.toJSON() || {};
+  const k = json.keys || {};
   return {
     endpoint: sub.endpoint,
-    keys: JSON.stringify(json.keys),
-    p256dh: json.keys.p256dh,
-    auth: json.keys.auth,
+    keys: {
+      p256dh: k.p256dh,
+      auth: k.auth,
+    },
   };
 }
+
+/* ---------- public API ---------- */
 
 export async function getExistingSubscription() {
   const reg = await getReadyRegistration();
@@ -82,6 +91,7 @@ export async function subscribeWebPush({ forceSync = true } = {}) {
   const reg = await getReadyRegistration();
   const existing = await reg.pushManager.getSubscription();
 
+  // Jika sudah ada subscription, sync ke server (optional) lalu kembalikan
   if (existing) {
     if (forceSync) {
       try {
@@ -93,11 +103,13 @@ export async function subscribeWebPush({ forceSync = true } = {}) {
     return existing;
   }
 
+  // Buat subscription baru
   const sub = await reg.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
   });
 
+  // Kirim ke server (retry kecil kalau gagal sementara)
   const payload = subToPayload(sub);
   let lastErr;
   for (let i = 0; i < 2; i++) {
@@ -121,12 +133,14 @@ export async function unsubscribeWebPush() {
   const sub = await reg.pushManager.getSubscription();
   if (!sub) return false;
 
+  // Beri tahu server dulu
   try {
     await callAPI("DELETE", "/notifications/subscribe", { endpoint: sub.endpoint });
   } catch (e) {
     console.warn("[Push] server unsubscribe failed, continue local:", e.message);
   }
 
+  // Lalu hapus sub di browser
   return sub.unsubscribe();
 }
 
