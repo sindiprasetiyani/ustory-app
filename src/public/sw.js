@@ -1,5 +1,5 @@
-const APP_CACHE = "ustory-static-v2";
-const RUNTIME_CACHE = "ustory-runtime-v2";
+const APP_CACHE = "ustory-static-v3";
+const RUNTIME_CACHE = "ustory-runtime-v3";
 
 const IS_DEV = self.location.hostname === "localhost" || self.location.hostname === "127.0.0.1";
 

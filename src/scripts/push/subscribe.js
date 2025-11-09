@@ -87,7 +87,8 @@ export async function subscribeWebPush({ forceSync = true } = {}) {
   if (existing) {
     if (forceSync) {
       try {
-        await callAPI("POST", "/notifications/subscribe", subToPayload(existing));
+        // Revisi: pakai URL absolut
+        await callAPI("POST", `${PUSH_API_BASE}/notifications/subscribe`, subToPayload(existing));
       } catch (e) {
         console.warn("[Push] sync existing subscription failed:", e.message);
       }
@@ -104,7 +105,8 @@ export async function subscribeWebPush({ forceSync = true } = {}) {
   let lastErr;
   for (let i = 0; i < 2; i++) {
     try {
-      await callAPI("POST", "/notifications/subscribe", payload);
+      // Revisi: pakai URL absolut
+      await callAPI("POST", `${PUSH_API_BASE}/notifications/subscribe`, payload);
       lastErr = null;
       break;
     } catch (e) {
@@ -124,7 +126,8 @@ export async function unsubscribeWebPush() {
   if (!sub) return false;
 
   try {
-    await callAPI("DELETE", "/notifications/subscribe", { endpoint: sub.endpoint });
+    // Revisi: pakai URL absolut
+    await callAPI("DELETE", `${PUSH_API_BASE}/notifications/subscribe`, { endpoint: sub.endpoint });
   } catch (e) {
     console.warn("[Push] server unsubscribe failed, continue local:", e.message);
   }
@@ -136,7 +139,8 @@ export async function syncServerSubscription() {
   try {
     const sub = await getExistingSubscription();
     if (!sub) return false;
-    await callAPI("POST", "/notifications/subscribe", subToPayload(sub));
+    // Revisi: pakai URL absolut
+    await callAPI("POST", `${PUSH_API_BASE}/notifications/subscribe`, subToPayload(sub));
     return true;
   } catch (e) {
     console.warn("[Push] syncServerSubscription failed:", e.message);

@@ -31,7 +31,7 @@ export default class FavoritesPage {
             <article class="story-card" data-id="${s.id}" tabindex="0" aria-label="Story favorit dari ${s.name || "Anonim"}">
               <img src="${s.photoUrl}" alt="Foto story dari ${s.name || "Anonim"}">
               <div class="story-content">
-                <h3>${s.name || "Anonim"}</h3>
+                <h2>${s.name || "Anonim"}</h2>
                 <p>${s.description || ""}</p>
                 <p class="meta">
                   <time datetime="${createdAtISO}">${createdAtText}</time>
