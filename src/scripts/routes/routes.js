@@ -1,4 +1,3 @@
-// src/scripts/routes/routes.js
 import HomePage from "../pages/home/home-page";
 import AddPage from "../pages/add/add-page";
 import LoginPage from "../pages/login/login-page";
@@ -12,7 +11,7 @@ const routes = {
   "/login": new LoginPage(),
   "/register": new RegisterPage(),
   "/about": new AboutPage(),
-  "/favorites": new FavoritesPage(), // ✅ pakai "new" biar konsisten
+  "/favorites": new FavoritesPage(),
 };
 
 export default routes;

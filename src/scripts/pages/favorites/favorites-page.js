@@ -1,4 +1,3 @@
-// src/scripts/pages/favorites/favorites-page.js
 import { getFavorites, addFavorite, removeFavorite, isFavorite } from "../../data/idb.js";
 
 export default class FavoritesPage {

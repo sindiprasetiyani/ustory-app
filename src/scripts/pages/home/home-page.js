@@ -61,7 +61,6 @@ export default class HomePage {
       return;
     }
 
-    // SW + push message handler
     if ("serviceWorker" in navigator) {
       try {
         const alreadyRegisteredFromApp = !!window.__SW_REGISTERED;
@@ -83,10 +82,8 @@ export default class HomePage {
       }
     }
 
-    // Toggle push
     mountPushToggle(document.body);
 
-    // Map init
     const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       attribution: "&copy; OpenStreetMap contributors",
@@ -116,7 +113,6 @@ export default class HomePage {
     const filterSlot = document.querySelector("#filter-slot");
     this._markers = {};
 
-    // Filter/search/sort bar dengan label terasosiasi
     this._mountFilterBar(filterSlot, (filters) => {
       const filtered = this._applyFilters(this._allStories, filters);
       this._renderAll(filtered, storyListContainer);
@@ -125,7 +121,6 @@ export default class HomePage {
     try {
       let stories = [];
 
-      // Network → cache; fallback ke IDB
       try {
         stories = await this.presenter.getStoriesWithLocation();
         saveStories(stories).catch(() => {});
@@ -134,7 +129,6 @@ export default class HomePage {
         stories = await getStoriesIDB();
       }
 
-      // Ambil favorite yang tersimpan
       try {
         const favs = await getFavorites();
         this._favSet = new Set(favs.map((s) => s.id));
@@ -152,7 +146,6 @@ export default class HomePage {
 
       this._renderAll(this._applyFilters(stories, { query: "", sort: "newest", loc: "all" }), storyListContainer);
 
-      // Aksesibilitas map: keyboard hint
       const mapEl = document.getElementById("map");
       mapEl.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -279,7 +272,6 @@ export default class HomePage {
       })
       .join("");
 
-    // klik kartu → fokus ke marker (tetap)
     stories.forEach((story) => {
       const card = storyListContainer.querySelector(`[data-id="${story.id}"]`);
       if (!card) return;
@@ -293,7 +285,6 @@ export default class HomePage {
         card.setAttribute("aria-pressed", "true");
       };
       card.addEventListener("click", (e) => {
-        // kalau klik dalam .card-actions (❤/hapus), jangan trigger
         if (e.target.closest(".card-actions")) return;
         goToMarker();
       });
@@ -305,7 +296,6 @@ export default class HomePage {
       });
     });
 
-    // === handler tombol favorite (IndexedDB) ===
     storyListContainer.addEventListener("click", async (e) => {
       const fav = e.target.closest(".fav-btn");
       if (!fav) return;
@@ -335,7 +325,6 @@ export default class HomePage {
       }
     });
 
-    // === event hapus lokal (dipertahankan persis) ===
     storyListContainer.addEventListener(
       "click",
       (e) => {
