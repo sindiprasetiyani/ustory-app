@@ -66,7 +66,9 @@ export default class AddPage {
           <label for="map">Select Location</label>
           <div id="map" class="map" role="region" aria-label="Pilih lokasi pada peta"></div>
 
+          <label for="lat" class="visually-hidden">Latitude</label>
           <input type="hidden" id="lat" name="lat" />
+          <label for="lon" class="visually-hidden">Longitude</label>
           <input type="hidden" id="lon" name="lon" />
 
           <button type="submit" class="btn-primary" id="submit-btn">Submit</button>
@@ -121,7 +123,10 @@ export default class AddPage {
       return;
     }
 
-    const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" });
+    const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors",
+    });
     const cartoLight = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
       maxZoom: 20,
       attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap contributors',

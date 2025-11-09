@@ -8,6 +8,9 @@ import customMarkerIcon from "../../utils/marker";
 import { mountPushToggle } from "../../push/ui-toggle.js";
 import { subscribeWebPush } from "../../push/subscribe.js";
 
+// Favorite (IndexedDB)
+import { getFavorites, addFavorite, removeFavorite, isFavorite } from "../../data/idb.js";
+
 export default class HomePage {
   constructor() {
     this.presenter = new HomePresenter({ api: DicodingStoryApi });
@@ -16,6 +19,7 @@ export default class HomePage {
     this._map = null;
     this._storiesLayer = null;
     this._markers = {};
+    this._favSet = new Set();
   }
 
   _formatDateID(dateInput) {
@@ -37,11 +41,14 @@ export default class HomePage {
       <section class="container">
         <h1 tabindex="0">Story Location Map</h1>
 
-        <!-- [ADD] Filter/Search/Sort bar akan disuntik via JS agar tidak ubah struktur besar -->
-        <div id="filter-slot"></div>
+        <h2 id="filter-heading" class="visually-hidden">Filter dan Pencarian</h2>
+        <div id="filter-slot" aria-labelledby="filter-heading"></div>
 
-        <div id="map" class="map" role="region" aria-label="Peta lokasi story" tabindex="0"></div>
-        <div id="story-list" class="story-grid" aria-live="polite" aria-busy="true"></div>
+        <h2 id="map-heading" class="visually-hidden">Peta Lokasi Story</h2>
+        <div id="map" class="map" role="region" aria-labelledby="map-heading" tabindex="0"></div>
+
+        <h2 id="list-heading" class="visually-hidden">Daftar Story</h2>
+        <div id="story-list" class="story-grid" aria-labelledby="list-heading" aria-live="polite" aria-busy="true"></div>
       </section>
     `;
   }
@@ -54,6 +61,7 @@ export default class HomePage {
       return;
     }
 
+    // SW + push message handler
     if ("serviceWorker" in navigator) {
       try {
         const alreadyRegisteredFromApp = !!window.__SW_REGISTERED;
@@ -75,8 +83,10 @@ export default class HomePage {
       }
     }
 
+    // Toggle push
     mountPushToggle(document.body);
 
+    // Map init
     const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       attribution: "&copy; OpenStreetMap contributors",
@@ -106,6 +116,7 @@ export default class HomePage {
     const filterSlot = document.querySelector("#filter-slot");
     this._markers = {};
 
+    // Filter/search/sort bar dengan label terasosiasi
     this._mountFilterBar(filterSlot, (filters) => {
       const filtered = this._applyFilters(this._allStories, filters);
       this._renderAll(filtered, storyListContainer);
@@ -114,13 +125,21 @@ export default class HomePage {
     try {
       let stories = [];
 
+      // Network → cache; fallback ke IDB
       try {
         stories = await this.presenter.getStoriesWithLocation();
-
         saveStories(stories).catch(() => {});
       } catch (netErr) {
         console.warn("[Home] fetch gagal, gunakan IDB:", netErr?.message || netErr);
         stories = await getStoriesIDB();
+      }
+
+      // Ambil favorite yang tersimpan
+      try {
+        const favs = await getFavorites();
+        this._favSet = new Set(favs.map((s) => s.id));
+      } catch {
+        this._favSet = new Set();
       }
 
       this._allStories = stories;
@@ -133,6 +152,7 @@ export default class HomePage {
 
       this._renderAll(this._applyFilters(stories, { query: "", sort: "newest", loc: "all" }), storyListContainer);
 
+      // Aksesibilitas map: keyboard hint
       const mapEl = document.getElementById("map");
       mapEl.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -151,22 +171,32 @@ export default class HomePage {
     const wrap = document.createElement("div");
     wrap.className = "filter-bar";
     wrap.innerHTML = `
-      <input
-        type="text"
-        id="search-story"
-        class="filter-input"
-        placeholder="🔍 Cari cerita..."
-        aria-label="Cari cerita"
-      />
-      <select id="sort-story" class="filter-select" aria-label="Urutkan">
-        <option value="newest" selected>Terbaru</option>
-        <option value="oldest">Terlama</option>
-      </select>
-      <select id="filter-location" class="filter-select" aria-label="Filter lokasi">
-        <option value="all" selected>Semua</option>
-        <option value="with">Dengan lokasi</option>
-        <option value="without">Tanpa lokasi</option>
-      </select>
+      <div class="filter-field">
+        <label for="search-story" class="visually-hidden">Cari cerita</label>
+        <input
+          type="text"
+          id="search-story"
+          class="filter-input"
+          placeholder="🔍 Cari cerita..."
+        />
+      </div>
+
+      <div class="filter-field">
+        <label for="sort-story" class="visually-hidden">Urutkan cerita</label>
+        <select id="sort-story" class="filter-select">
+          <option value="newest" selected>Terbaru</option>
+          <option value="oldest">Terlama</option>
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label for="filter-location" class="visually-hidden">Filter lokasi</label>
+        <select id="filter-location" class="filter-select">
+          <option value="all" selected>Semua</option>
+          <option value="with">Dengan lokasi</option>
+          <option value="without">Tanpa lokasi</option>
+        </select>
+      </div>
     `;
     slotEl.innerHTML = "";
     slotEl.appendChild(wrap);
@@ -212,7 +242,6 @@ export default class HomePage {
 
   _renderAll(stories, storyListContainer) {
     this._renderCards(stories, storyListContainer);
-
     this._renderMarkers(stories);
 
     const bounds = stories.filter((s) => s.lat && s.lon).map((s) => [s.lat, s.lon]);
@@ -229,6 +258,8 @@ export default class HomePage {
       .map((story) => {
         const createdAtText = this._formatDateID(story.createdAt);
         const createdAtISO = story.createdAt ? new Date(story.createdAt).toISOString() : "";
+        const isFav = this._favSet.has(story.id);
+        const favLabel = isFav ? "Hapus dari favorit" : "Simpan ke favorit";
         return `
           <article class="story-card" data-id="${story.id}" tabindex="0" role="button" aria-pressed="false" aria-label="Story dari ${story.name || "Anonim"}">
             <img src="${story.photoUrl}" alt="Foto story dari ${story.name || "Anonim"}">
@@ -238,13 +269,17 @@ export default class HomePage {
               <p class="meta">
                 <time datetime="${createdAtISO}" aria-label="Tanggal dibuat">${createdAtText}</time>
               </p>
-              <button class="delete-btn" data-id="${story.id}" aria-label="Hapus story ini (lokal saja)">🗑 Hapus</button>
+              <div class="card-actions">
+                <button class="fav-btn ${isFav ? "fav-active" : ""}" data-id="${story.id}" aria-pressed="${isFav ? "true" : "false"}" aria-label="${favLabel}">❤</button>
+                <button class="delete-btn" data-id="${story.id}" aria-label="Hapus story ini (lokal saja)">🗑 Hapus</button>
+              </div>
             </div>
           </article>
         `;
       })
       .join("");
 
+    // klik kartu → fokus ke marker (tetap)
     stories.forEach((story) => {
       const card = storyListContainer.querySelector(`[data-id="${story.id}"]`);
       if (!card) return;
@@ -257,7 +292,11 @@ export default class HomePage {
         this._highlightStory(card);
         card.setAttribute("aria-pressed", "true");
       };
-      card.addEventListener("click", goToMarker);
+      card.addEventListener("click", (e) => {
+        // kalau klik dalam .card-actions (❤/hapus), jangan trigger
+        if (e.target.closest(".card-actions")) return;
+        goToMarker();
+      });
       card.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -266,6 +305,37 @@ export default class HomePage {
       });
     });
 
+    // === handler tombol favorite (IndexedDB) ===
+    storyListContainer.addEventListener("click", async (e) => {
+      const fav = e.target.closest(".fav-btn");
+      if (!fav) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const id = fav.dataset.id;
+      const story = stories.find((s) => s.id === id);
+      if (!story) return;
+
+      try {
+        if (this._favSet.has(id)) {
+          await removeFavorite(id);
+          this._favSet.delete(id);
+          fav.classList.remove("fav-active");
+          fav.setAttribute("aria-pressed", "false");
+          fav.setAttribute("aria-label", "Simpan ke favorit");
+        } else {
+          await addFavorite(story);
+          this._favSet.add(id);
+          fav.classList.add("fav-active");
+          fav.setAttribute("aria-pressed", "true");
+          fav.setAttribute("aria-label", "Hapus dari favorit");
+        }
+      } catch (err) {
+        console.warn("Toggle favorite gagal:", err);
+      }
+    });
+
+    // === event hapus lokal (dipertahankan persis) ===
     storyListContainer.addEventListener(
       "click",
       (e) => {
